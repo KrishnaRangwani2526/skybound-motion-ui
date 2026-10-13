@@ -23,6 +23,8 @@
  --airframe: oklch(0.94 0.006 200); --airframe-metal: oklch(0.7 0.012 200); --airframe-glass: oklch(0.22 0.022 210);
  --airframe-livery: oklch(0.38 0.075 186); --engine-interior: oklch(0.2 0.01 200);
  --signal: oklch(0.69 0.15 151); --shadow-soft: 0 8px 30px oklch(0.3 0.04 185 / 0.06);
+ --motion-ease: cubic-bezier(.22,1,.36,1);
+ --shadow-control: 0 5px 14px oklch(0.25 0.035 185 / .1);
 }
 @layer base { * { border-color: var(--border); } body { margin:0; background:var(--background); color:var(--foreground); font-family:var(--font-sans); letter-spacing:0; } button,a,input { -webkit-tap-highlight-color:transparent; } }
 .flight-app { min-height:100vh; overflow:hidden; }
@@ -51,6 +53,15 @@ h1 { font-family:var(--font-display); font-weight:500; font-size:64px; line-heig
 .aircraft-tag .desc { font-size:12px; color:var(--muted-foreground); }
 .view-controls { position:absolute; z-index:3; bottom:85px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:3px; border:1px solid var(--border); padding:5px; border-radius:40px; background:color-mix(in oklab,var(--card) 80%,transparent); backdrop-filter:blur(16px); box-shadow:var(--shadow-soft); }
 .view-controls button { font-size:11px; height:34px; padding:0 18px; }
+.view-controls button, .scene-actions button, .playback button { transition:background-color 280ms var(--motion-ease),color 280ms var(--motion-ease),transform 280ms var(--motion-ease),box-shadow 280ms var(--motion-ease); }
+.view-controls button[data-active=true] { box-shadow:var(--shadow-control); }
+.scene-actions button:hover, .playback button:hover { transform:translateY(-2px); box-shadow:var(--shadow-control); }
+.scene-actions button:active, .playback button:active { transform:scale(.94); }
+.canvas-wrap { touch-action:none; animation:scene-reveal 900ms var(--motion-ease) both; }
+.timeline { transition:opacity 250ms var(--motion-ease); }
+.timeline::-webkit-slider-thumb { transition:box-shadow 250ms var(--motion-ease); }
+.timeline:hover::-webkit-slider-thumb { box-shadow:0 0 0 5px color-mix(in oklab,var(--primary) 12%,transparent); }
+@keyframes scene-reveal { from {opacity:0} to {opacity:1} }
 .scene-actions { position:absolute; z-index:3; right:5%; bottom:91px; display:flex; gap:8px; }
 .scene-actions button { width:40px; height:40px; }
 .playback { position:absolute; left:5%; right:5%; bottom:22px; z-index:3; display:flex; align-items:center; gap:18px; }
