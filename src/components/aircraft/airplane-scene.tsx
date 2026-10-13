@@ -64,7 +64,7 @@ function Jet({ playing, progress }:Pick<Props,'playing'|'progress'>) {
 function CameraRig({view,reset,zoom}:Pick<Props,'view'|'reset'|'zoom'>) {
  const controls=useRef<OrbitControlsImpl>(null);
  const { camera, size } = useThree();
- useEffect(()=>{if(camera instanceof THREE.PerspectiveCamera){camera.fov=size.width<800?46:38;camera.updateProjectionMatrix();}},[camera,size.width]);
+ useEffect(()=>{if(camera instanceof THREE.PerspectiveCamera){camera.fov=size.width<800?54:38;camera.updateProjectionMatrix();}},[camera,size.width]);
  useEffect(()=>{const c=controls.current;if(!c)return; const positions:Record<AircraftView,[number,number,number]>={perspective:[-12,7.5,14],side:[0,2,20],front:[-21,2,0],top:[0,22,.01]}; c.object.position.set(...positions[view]).multiplyScalar(zoom);c.target.set(0,.1,0);c.update();},[view,reset,zoom]);
  return <OrbitControls ref={controls} enablePan={false} minDistance={12} maxDistance={32} enableDamping dampingFactor={.06} maxPolarAngle={Math.PI*.88}/>;
 }
