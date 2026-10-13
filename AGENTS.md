@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep the interactive aircraft scene in a lazy-loaded browser-only module using React Three Fiber; this keeps WebGL out of SSR while preserving the TanStack shell.
+- Build aircraft geometry procedurally with Three.js and use the global design system for interface and scene color roles; this keeps the aircraft interactive without remote model dependencies.

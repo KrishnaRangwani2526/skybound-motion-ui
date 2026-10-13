@@ -9,6 +9,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        flight: "bg-foreground text-background hover:bg-primary hover:text-primary-foreground rounded-full",
+        cockpit: "border border-border bg-card/80 text-foreground hover:bg-accent rounded-full",
+        view: "text-muted-foreground hover:text-foreground hover:bg-accent rounded-full data-[active=true]:bg-foreground data-[active=true]:text-background",
         default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
