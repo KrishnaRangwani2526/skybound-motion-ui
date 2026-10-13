@@ -1,5 +1,5 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -15,12 +15,12 @@ function usePalette() {
  // Convert CSS Color 4 tokens to a Three-compatible sRGB value through canvas.
  const c = document.createElement('canvas'); c.width = 1; c.height = 1; const ctx = c.getContext('2d');
  if (!ctx) return new THREE.Color('white'); ctx.fillStyle = rgb; ctx.fillRect(0,0,1,1); const p = ctx.getImageData(0,0,1,1).data;
- return new THREE.Color().setRGB(p[0]/255,p[1]/255,p[2]/255,THREE.SRGBColorSpace);
+ return new THREE.Color().setRGB((p[0] ?? 255)/255,(p[1] ?? 255)/255,(p[2] ?? 255)/255,THREE.SRGBColorSpace);
  };
- return { white:color('--airframe'), metal:color('--airframe-metal'), glass:color('--airframe-glass'), teal:color('--airframe-livery'), dark:color('--engine-interior') };
+ return { white:color('--airframe'), metal:color('--airframe-metal'), glass:color('--airframe-glass'), teal:color('--airframe-livery'), dark:color('--engine-interior'), sky:color('--background') };
  },[]);
 }
-function Surface({ points, color, thickness = .07 }: { points:number[][]; color:THREE.Color; thickness?:number }) {
+function Surface({ points, color, thickness = .07 }: { points:[number,number][]; color:THREE.Color; thickness?:number }) {
  const geometry = useMemo(() => {
  const shape = new THREE.Shape(); points.forEach(([x,y],i) => i ? shape.lineTo(x,y) : shape.moveTo(x,y)); shape.closePath();
  const g = new THREE.ExtrudeGeometry(shape,{depth:thickness,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:.025,bevelThickness:.015}); g.computeVertexNormals(); return g;
@@ -63,13 +63,16 @@ function Jet({ playing, progress }:Pick<Props,'playing'|'progress'>) {
 }
 function CameraRig({view,reset,zoom}:Pick<Props,'view'|'reset'|'zoom'>) {
  const controls=useRef<OrbitControlsImpl>(null);
+ const { camera, size } = useThree();
+ useEffect(()=>{if(camera instanceof THREE.PerspectiveCamera){camera.fov=size.width<800?46:38;camera.updateProjectionMatrix();}},[camera,size.width]);
  useEffect(()=>{const c=controls.current;if(!c)return; const positions:Record<AircraftView,[number,number,number]>={perspective:[-12,7.5,14],side:[0,2,20],front:[-21,2,0],top:[0,22,.01]}; c.object.position.set(...positions[view]).multiplyScalar(zoom);c.target.set(0,.1,0);c.update();},[view,reset,zoom]);
  return <OrbitControls ref={controls} enablePan={false} minDistance={12} maxDistance={32} enableDamping dampingFactor={.06} maxPolarAngle={Math.PI*.88}/>;
 }
 export default function AirplaneScene(props:Props) {
  const [reduced,setReduced]=useState(false); useEffect(()=>setReduced(matchMedia('(prefers-reduced-motion: reduce)').matches),[]);
+ const palette=usePalette();
  return <Canvas camera={{position:[-12,7.5,14],fov:38}} dpr={[1,2]} gl={{antialias:true,alpha:true}}>
- <ambientLight intensity={1.8}/><hemisphereLight args={['#eafaff','#748b91',2]}/>
+ <ambientLight intensity={1.8}/><hemisphereLight args={[palette.sky,palette.metal,2]}/>
  <directionalLight position={[-8,12,8]} intensity={3.5}/><directionalLight position={[5,3,-8]} intensity={2}/>
  <Jet playing={props.playing&&!reduced} progress={props.progress}/><CameraRig {...props}/>
  </Canvas>;

@@ -72,9 +72,9 @@ h1 { font-family:var(--font-display); font-weight:500; font-size:64px; line-heig
 @media (max-width:700px) {
  .topbar {height:76px} .brand {font-size:20px} .top-center {display:none} .edition {font-size:10px}
  .stage {height:740px; min-height:0} .stage-copy {top:32px} h1 {font-size:43px} .subtitle {font-size:13px} .stage-number {top:192px;font-size:9px} .stage-number strong {font-size:12px}
- .canvas-wrap {inset:150px -26% 150px} .aircraft-tag {bottom:190px} .aircraft-tag .model {font-size:17px}
+ .canvas-wrap {inset:150px -15% 150px} .aircraft-tag {bottom:190px} .aircraft-tag .model {font-size:17px}
  .view-controls {bottom:120px; width:max-content} .view-controls button {padding:0 13px;font-size:10px}
- .scene-actions {bottom:55px} .playback {bottom:58px;right:32%} .scene-label {display:none} .playback {gap:10px} .time {min-width:65px;font-size:9px}
+ .scene-actions {bottom:55px} .playback {bottom:58px;right:32%} .scene-label {display:none} .playback {gap:10px} .time {min-width:65px;font-size:9px} .playback > button:last-child {display:none}
  .stats {grid-template-columns:repeat(2,1fr); gap:25px 0; padding:25px 0} .stat {padding-left:20px} .stat:first-child {grid-column:1 / -1} .stat:nth-child(2),.stat:nth-child(4) {padding-left:0;border:0} .stat-value {font-size:20px} .bottom {font-size:9px;gap:15px}
 }
 @media (prefers-reduced-motion:reduce) { *,*:before,*:after { animation-duration:0.01ms!important; transition-duration:0.01ms!important; } }
