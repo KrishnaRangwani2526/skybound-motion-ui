@@ -34,15 +34,23 @@ export function wingGeometry() {
 export function cockpitGeometry() {
  const panes:ProfilePoint[][]=[ [[-5.76,.24],[-5.55,.46],[-5.23,.48],[-5.32,.24]], [[-5.25,.25],[-5.16,.48],[-4.86,.46],[-4.83,.24]] ];
  const positions:number[]=[];const indices:number[]=[];
+ const curve=new THREE.CatmullRomCurve3(HULL_PROFILE.map(([x,r])=>new THREE.Vector3(x,r,0)),false,'centripetal');
+ const profile=curve.getPoints(500);
  panes.forEach(pane=>{
   const offset=positions.length/3;
-  pane.forEach(([x,y])=>{
-   const next=HULL_PROFILE.findIndex(([px])=>px>x);
-   const a=HULL_PROFILE[Math.max(0,next-1)] ?? [-6.3,0];const b=HULL_PROFILE[Math.max(0,next)] ?? [-4.4,.74];
-   const radius=THREE.MathUtils.lerp(a[1],b[1],(x-a[0])/(b[0]-a[0]));
-   positions.push(x,y,Math.sqrt(Math.max(.001,radius*radius-y*y))+.016);
-  });
-  indices.push(offset,offset+1,offset+2,offset,offset+2,offset+3);
+  const [bottomLeft,topLeft,topRight,bottomRight]=pane;
+  if(!bottomLeft||!topLeft||!topRight||!bottomRight)return;
+  for(let row=0;row<=8;row++)for(let col=0;col<=8;col++){
+   const u=col/8,v=row/8;
+   const x=THREE.MathUtils.lerp(THREE.MathUtils.lerp(bottomLeft[0],bottomRight[0],u),THREE.MathUtils.lerp(topLeft[0],topRight[0],u),v);
+   const y=THREE.MathUtils.lerp(THREE.MathUtils.lerp(bottomLeft[1],bottomRight[1],u),THREE.MathUtils.lerp(topLeft[1],topRight[1],u),v);
+   const next=profile.findIndex(p=>p.x>x);const a=profile[Math.max(0,next-1)];const b=profile[Math.max(0,next)];
+   const radius=a&&b?THREE.MathUtils.lerp(a.y,b.y,(x-a.x)/(b.x-a.x)):.5;
+   positions.push(x,y,Math.sqrt(Math.max(.001,radius*radius-y*y))+.012);
+  }
+  for(let row=0;row<8;row++)for(let col=0;col<8;col++){
+   const a=offset+row*9+col;indices.push(a,a+9,a+1,a+1,a+9,a+10);
+  }
  });
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();return g;
 }
