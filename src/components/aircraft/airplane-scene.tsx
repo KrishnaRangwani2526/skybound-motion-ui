@@ -22,13 +22,6 @@ function usePalette() {
  return { white:color('--airframe'), metal:color('--airframe-metal'), glass:color('--airframe-glass'), teal:color('--airframe-livery'), dark:color('--engine-interior'), sky:color('--background') };
  },[]);
 }
-function Surface({ points, color, thickness = .07 }: { points:[number,number][]; color:THREE.Color; thickness?:number }) {
- const geometry = useMemo(() => {
- const shape = new THREE.Shape(); points.forEach(([x,y],i) => i ? shape.lineTo(x,y) : shape.moveTo(x,y)); shape.closePath();
- const g = new THREE.ExtrudeGeometry(shape,{depth:thickness,bevelEnabled:true,bevelSegments:5,steps:1,bevelSize:.035,bevelThickness:.018}); g.computeVertexNormals(); return g;
- },[JSON.stringify(points),thickness]);
- return <mesh geometry={geometry} castShadow><meshStandardMaterial color={color} metalness={.35} roughness={.32}/></mesh>;
-}
 function Jet({ playing, progress }:Pick<Props,'playing'|'progress'>) {
  const group = useRef<THREE.Group>(null); const p = usePalette();
  const phase=useRef(0);const fan=useRef<THREE.Group>(null);const fanOther=useRef<THREE.Group>(null);
