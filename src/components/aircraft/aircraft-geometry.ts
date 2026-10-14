@@ -65,7 +65,7 @@ export function wingGeometry() {
 }
 
 export function cockpitGeometry() {
- const panes:ProfilePoint[][]=[ [[-5.99,.17],[-5.86,.34],[-5.60,.40],[-5.68,.18]], [[-5.64,.18],[-5.56,.41],[-5.27,.42],[-5.29,.19]], [[-5.24,.19],[-5.22,.42],[-5.02,.40],[-4.98,.22]] ];
+ const panes:ProfilePoint[][]=[ [[-5.91,.15],[-5.81,.28],[-5.60,.34],[-5.68,.16]], [[-5.64,.17],[-5.56,.36],[-5.27,.39],[-5.29,.19]], [[-5.24,.19],[-5.22,.39],[-5.02,.38],[-4.98,.22]] ];
  const positions:number[]=[];const indices:number[]=[];
  panes.forEach(pane=>{
   const offset=positions.length/3;

@@ -56,9 +56,9 @@ function Jet({ playing, progress }:Pick<Props,'playing'|'progress'>) {
  <group position={[-.85,-.98,1.9]}>
  <mesh geometry={nacelle} rotation={[0,0,-Math.PI/2]} castShadow><meshStandardMaterial color={p.white} metalness={.15} roughness={.3} side={THREE.DoubleSide}/></mesh>
  <mesh rotation={[0,Math.PI/2,0]} position={[-.963,0,0]}><torusGeometry args={[.454,.024,16,64]}/><meshStandardMaterial color={p.metal} metalness={.88} roughness={.24}/></mesh>
- <mesh rotation={[0,Math.PI/2,0]} position={[-.39,0,0]}><circleGeometry args={[.43,48]}/><meshStandardMaterial color={p.dark} side={THREE.DoubleSide}/></mesh>
- <group ref={side===1?fan:fanOther} position={[-.49,0,0]}>{blades&&<mesh geometry={blades}><meshStandardMaterial color={p.metal} metalness={.82} roughness={.4} side={THREE.DoubleSide}/></mesh>}</group>
- <mesh position={[-.57,0,0]} rotation={[0,0,Math.PI/2]}><coneGeometry args={[.105,.20,32]}/><meshStandardMaterial color={p.dark} metalness={.6} roughness={.3}/></mesh>
+ <mesh rotation={[0,Math.PI/2,0]} position={[-.73,0,0]}><circleGeometry args={[.43,48]}/><meshStandardMaterial color={p.dark} side={THREE.DoubleSide}/></mesh>
+ <group ref={side===1?fan:fanOther} position={[-.80,0,0]}>{blades&&<mesh geometry={blades}><meshStandardMaterial color={p.metal} metalness={.82} roughness={.4} side={THREE.DoubleSide}/></mesh>}</group>
+ <mesh position={[-.87,0,0]} rotation={[0,0,Math.PI/2]}><coneGeometry args={[.105,.18,32]}/><meshStandardMaterial color={p.dark} metalness={.6} roughness={.3}/></mesh>
  <mesh rotation={[0,0,-Math.PI/2]} position={[.72,0,0]}><cylinderGeometry args={[.20,.25,.3,48,1,true]}/><meshStandardMaterial color={p.metal} metalness={.8} roughness={.45} side={THREE.DoubleSide}/></mesh>
  <mesh rotation={[0,Math.PI/2,0]} position={[.78,0,0]}><circleGeometry args={[.195,32]}/><meshStandardMaterial color={p.dark} side={THREE.DoubleSide}/></mesh>
  </group>
