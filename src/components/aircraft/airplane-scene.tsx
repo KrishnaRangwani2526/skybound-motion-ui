@@ -1,8 +1,8 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, Lightformer } from '@react-three/drei';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { HULL_PROFILE, smoothLathe, wingGeometry, cockpitGeometry } from './aircraft-geometry';
+import { smoothLathe, fuselageGeometry, airfoilGeometry, wingGeometry, cockpitGeometry } from './aircraft-geometry';
+import { cabinWindows, fuselageSeams, fanBlades, wingFinish } from './aircraft-details';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
@@ -32,18 +32,15 @@ function Surface({ points, color, thickness = .07 }: { points:[number,number][];
 function Jet({ playing, progress }:Pick<Props,'playing'|'progress'>) {
  const group = useRef<THREE.Group>(null); const p = usePalette();
  const phase=useRef(0);const fan=useRef<THREE.Group>(null);const fanOther=useRef<THREE.Group>(null);
- const hull = useMemo(() => smoothLathe(HULL_PROFILE),[]);
- const nacelle = useMemo(() => smoothLathe([[-.95,.49],[-.88,.53],[-.65,.56],[-.25,.555],[.2,.51],[.6,.4],[.88,.33]],70),[]);
+ const hull = useMemo(fuselageGeometry,[]);
+ const nacelle = useMemo(() => smoothLathe([[-.98,.46],[-.97,.48],[-.91,.51],[-.7,.53],[-.26,.51],[.23,.45],[.61,.35],[.81,.30],[.82,.27],[.57,.27],[.2,.33],[-.25,.39],[-.76,.425],[-.94,.425],[-.98,.46]],100),[]);
  const wing = useMemo(wingGeometry,[]);const cockpit=useMemo(cockpitGeometry,[]);
- const windows = useMemo(()=>{
- const parts=Array.from({length:40},(_,i)=>{const g=new THREE.SphereGeometry(1,12,8);g.scale(.057,.082,.012);g.rotateX(.36);g.translate(-4.35+i*.19,.265,.718);return g;});
- const merged=mergeGeometries(parts);parts.forEach(g=>g.dispose());return merged;
- },[]);
- const blades=useMemo(()=>{
- const parts=Array.from({length:24},(_,i)=>{const g=new THREE.BoxGeometry(.024,.31,.052);g.rotateY(.55);g.translate(0,.255,0);g.rotateX(i*Math.PI/12);return g;});
- const merged=mergeGeometries(parts);parts.forEach(g=>g.dispose());return merged;
- },[]);
- useEffect(()=>()=>{hull.dispose();nacelle.dispose();wing.dispose();cockpit.dispose();windows?.dispose();blades?.dispose();},[hull,nacelle,wing,cockpit,windows,blades]);
+ const windows = useMemo(cabinWindows,[]),blades=useMemo(fanBlades,[]),seams=useMemo(fuselageSeams,[]);
+ const stabilizer=useMemo(()=>airfoilGeometry([[.34,3.86,5.4,.03],[1.2,4.3,5.6,.09],[2.18,5.1,5.75,.18]],.065),[]);
+ const fin=useMemo(()=>airfoilGeometry([[.40,3.38,5.75,0],[.72,3.96,5.72,0],[1.25,4.27,5.67,0],[2.48,5.05,5.55,0]],.075,true),[]);
+ const winglet=useMemo(()=>airfoilGeometry([[.17,1.6,2.28,5.6],[.29,1.70,2.29,5.74],[.56,1.89,2.31,5.79],[1.04,2.12,2.34,5.80]],.07,true),[]);
+ const wingMap=useMemo(()=>wingFinish(p.white,p.metal),[p]);
+ useEffect(()=>()=>{hull.dispose();nacelle.dispose();wing.dispose();cockpit.dispose();windows?.dispose();blades?.dispose();seams?.dispose();stabilizer.dispose();fin.dispose();winglet.dispose();wingMap.dispose();},[hull,nacelle,wing,cockpit,windows,blades,seams,stabilizer,fin,winglet,wingMap]);
  const label = useMemo(() => {const c=document.createElement('canvas');c.width=1024;c.height=128; const ctx=c.getContext('2d'); if(ctx){ctx.clearRect(0,0,1024,128);ctx.fillStyle=p.teal.getStyle();ctx.font='500 78px Arial';ctx.fillText('A E R O N A U T',15,95);} const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8;return texture;},[p]);
  useEffect(()=>()=>label.dispose(),[label]);
  useFrame((_,rawDelta)=>{
@@ -55,31 +52,31 @@ function Jet({ playing, progress }:Pick<Props,'playing'|'progress'>) {
  jet.rotation.z=THREE.MathUtils.lerp(jet.rotation.z,Math.sin(progress*Math.PI*2)*.012,ease);
  });
  return <group ref={group}>
- <mesh geometry={hull} rotation={[0,0,-Math.PI/2]} castShadow receiveShadow><meshPhysicalMaterial color={p.white} metalness={.12} roughness={.3} clearcoat={.55} clearcoatRoughness={.24}/></mesh>
- <mesh position={[.25,-.48,0]} scale={[2.15,.38,.88]}><sphereGeometry args={[1,48,24]}/><meshPhysicalMaterial color={p.white} metalness={.12} roughness={.32} clearcoat={.4}/></mesh>
+ <mesh geometry={hull} castShadow receiveShadow><meshPhysicalMaterial color={p.white} metalness={.08} roughness={.28} clearcoat={.65} clearcoatRoughness={.2}/></mesh>
+ <mesh position={[.25,-.42,0]} scale={[1.94,.30,.76]} castShadow><sphereGeometry args={[1,48,24]}/><meshPhysicalMaterial color={p.white} metalness={.08} roughness={.32} clearcoat={.4}/></mesh>
  {/* Swept wings with defined root chords, tapered tips, and winglets. */}
  {[-1,1].map(side=><group key={side} scale={[1,1,side]}>
- <mesh geometry={wing} castShadow receiveShadow><meshPhysicalMaterial color={p.white} metalness={.22} roughness={.33} clearcoat={.3} side={THREE.DoubleSide}/></mesh>
- <group position={[1.85,.2,5.65]} rotation={[-.18,-.13,0]}><Surface color={p.teal} points={[[0,0],[.6,0],[.83,.82],[.52,1.08],[.35,.88]]} thickness={.035}/></group>
- <group rotation={[Math.PI/2,0,0]} position={[0,.05,0]}><Surface color={p.white} points={[[4.15,.22],[5.6,.22],[6.05,2.3],[5.5,2.45]]} thickness={.045}/></group>
+ <mesh geometry={wing} castShadow receiveShadow><meshPhysicalMaterial map={wingMap} metalness={.18} roughness={.35} clearcoat={.3} side={THREE.DoubleSide}/></mesh>
+ <mesh geometry={winglet} castShadow><meshPhysicalMaterial color={p.teal} metalness={.12} roughness={.3} clearcoat={.5} side={THREE.DoubleSide}/></mesh>
+ <mesh geometry={stabilizer} castShadow receiveShadow><meshPhysicalMaterial color={p.white} metalness={.12} roughness={.35} side={THREE.DoubleSide}/></mesh>
  <mesh position={[-.15,-.58,1.9]} scale={[.8,.4,.13]}><sphereGeometry args={[1,24,16]}/><meshStandardMaterial color={p.white} roughness={.35}/></mesh>
  <group position={[-.85,-.98,1.9]}>
  <mesh geometry={nacelle} rotation={[0,0,-Math.PI/2]} castShadow><meshStandardMaterial color={p.white} metalness={.15} roughness={.3} side={THREE.DoubleSide}/></mesh>
- <mesh rotation={[0,Math.PI/2,0]} position={[-.92,0,0]}><torusGeometry args={[.48,.045,16,64]}/><meshStandardMaterial color={p.metal} metalness={.8} roughness={.23}/></mesh>
- <mesh rotation={[0,Math.PI/2,0]} position={[-.64,0,0]}><circleGeometry args={[.445,48]}/><meshStandardMaterial color={p.dark} side={THREE.DoubleSide}/></mesh>
- <group ref={side===1?fan:fanOther} position={[-.68,0,0]}>{blades&&<mesh geometry={blades}><meshStandardMaterial color={p.metal} metalness={.85} roughness={.35}/></mesh>}</group>
- <mesh position={[-.76,0,0]} rotation={[0,0,-Math.PI/2]}><coneGeometry args={[.115,.24,32]}/><meshStandardMaterial color={p.metal} metalness={.6}/></mesh>
- <mesh rotation={[0,Math.PI/2,0]} position={[.93,0,0]}><circleGeometry args={[.29,32]}/><meshStandardMaterial color={p.dark} side={THREE.DoubleSide}/></mesh>
+ <mesh rotation={[0,Math.PI/2,0]} position={[-.963,0,0]}><torusGeometry args={[.454,.024,16,64]}/><meshStandardMaterial color={p.metal} metalness={.88} roughness={.24}/></mesh>
+ <mesh rotation={[0,Math.PI/2,0]} position={[-.39,0,0]}><circleGeometry args={[.43,48]}/><meshStandardMaterial color={p.dark} side={THREE.DoubleSide}/></mesh>
+ <group ref={side===1?fan:fanOther} position={[-.49,0,0]}>{blades&&<mesh geometry={blades}><meshStandardMaterial color={p.metal} metalness={.82} roughness={.4} side={THREE.DoubleSide}/></mesh>}</group>
+ <mesh position={[-.57,0,0]} rotation={[0,0,Math.PI/2]}><coneGeometry args={[.105,.20,32]}/><meshStandardMaterial color={p.dark} metalness={.6} roughness={.3}/></mesh>
+ <mesh rotation={[0,0,-Math.PI/2]} position={[.72,0,0]}><cylinderGeometry args={[.20,.25,.3,48,1,true]}/><meshStandardMaterial color={p.metal} metalness={.8} roughness={.45} side={THREE.DoubleSide}/></mesh>
+ <mesh rotation={[0,Math.PI/2,0]} position={[.78,0,0]}><circleGeometry args={[.195,32]}/><meshStandardMaterial color={p.dark} side={THREE.DoubleSide}/></mesh>
  </group>
  {/* Cabin windows and emergency-exit outlines. */}
  {windows&&<mesh geometry={windows}><meshPhysicalMaterial color={p.glass} metalness={.3} roughness={.14} clearcoat={1}/></mesh>}
- <mesh position={[-2.7,-.025,.767]}><planeGeometry args={[2.6,.33]}/><meshBasicMaterial map={label} transparent depthWrite={false}/></mesh>
- {[-4.75,3.5].map(x=><mesh key={x} position={[x,-.025,x<0?.709:.661]}><boxGeometry args={[.018,.65,.008]}/><meshStandardMaterial color={p.metal}/></mesh>)}
+ <mesh position={[-2.65,-.015,.674]}><planeGeometry args={[2.65,.31]}/><meshBasicMaterial map={label} transparent depthWrite={false}/></mesh>
+ {seams&&<mesh geometry={seams}><meshStandardMaterial color={p.metal} roughness={.6}/></mesh>}
  <mesh geometry={cockpit}><meshPhysicalMaterial color={p.glass} metalness={.25} roughness={.12} clearcoat={1} side={THREE.DoubleSide}/></mesh>
  </group>)}
- <group position={[0,.45,0]}><Surface color={p.teal} points={[[3.3,0],[5.85,0],[5.78,2.65],[5.14,2.9],[4.5,1.1]]} thickness={.12}/></group>
- <mesh position={[5.12,2.12,.143]} rotation={[0,0,-.55]}><planeGeometry args={[.11,.63]}/><meshBasicMaterial color={p.white}/></mesh>
- <mesh position={[5.32,2.02,.144]} rotation={[0,0,-.55]}><planeGeometry args={[.11,.4]}/><meshBasicMaterial color={p.white}/></mesh>
+ <mesh geometry={fin} castShadow receiveShadow><meshPhysicalMaterial color={p.teal} metalness={.12} roughness={.3} clearcoat={.5} side={THREE.DoubleSide}/></mesh>
+ {[-1,1].map(side=><group key={side} scale={[1,1,side]}><mesh position={[5.12,1.91,.07]} rotation={[0,0,-.55]}><planeGeometry args={[.07,.44]}/><meshBasicMaterial color={p.white}/></mesh><mesh position={[5.28,1.85,.065]} rotation={[0,0,-.55]}><planeGeometry args={[.07,.29]}/><meshBasicMaterial color={p.white}/></mesh></group>)}
  </group>;
 }
 function CameraRig({view,reset,zoom}:Pick<Props,'view'|'reset'|'zoom'>) {
