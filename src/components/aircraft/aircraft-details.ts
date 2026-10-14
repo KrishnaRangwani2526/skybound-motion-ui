@@ -18,7 +18,8 @@ export function cabinWindows(){
 
 export function fuselageSeams(){
  const parts:THREE.BufferGeometry[]=[];
- for(const [x,w,h] of [[-4.6,.27,.75],[3.38,.26,.71],[-.93,.20,.38],[-.4,.20,.38]]){
+ const doors:[number,number,number][]=[[-4.6,.27,.75],[3.38,.26,.71],[-.93,.20,.38],[-.4,.20,.38]];
+ for(const [x,w,h] of doors){
   const points:THREE.Vector3[]=[];
   for(let j=0;j<=64;j++){
    const angle=j/64*Math.PI*2;
