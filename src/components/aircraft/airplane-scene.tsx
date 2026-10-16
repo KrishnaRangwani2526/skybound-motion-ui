@@ -10,8 +10,29 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 export type AircraftView = 'perspective' | 'side' | 'front' | 'top';
 export type FlightInput = { x: number; y: number };
 type Props = { playing: boolean; view: AircraftView; reset: number; progress: number; zoom: number; input: { current: FlightInput } };
-// Flight feel: gentle airliner response, kept inside the visible stage.
-const SPEED = 3.2, RESPONSE = 2.2, BOUND_H = 3.6, BOUND_V = 1.6;
+// Flight feel: gentle airliner response, roaming the whole visible sky.
+const SPEED = 6, RESPONSE = 2.2, BOUND_H = 11, BOUND_V = 5;
+const CLOUD_SPEED = 14, CLOUD_SPAN = 70;
+function Clouds({ playing, color }: { playing: boolean; color: THREE.Color }) {
+ const group = useRef<THREE.Group>(null);
+ const puffs = useMemo(() => Array.from({ length: 26 }, (_, i) => {
+  const r = (n: number) => { const s = Math.sin((i + 1) * 12.9898 * n) * 43758.5453; return s - Math.floor(s); };
+  return { x: (r(1) - .5) * CLOUD_SPAN, y: (r(2) > .35 ? -1 : 1) * (6 + r(3) * 6), z: -8 - r(4) * 30, s: 1.2 + r(5) * 2.2 };
+ }), []);
+ useFrame((_, raw) => {
+  const g = group.current; if (!g || !playing) return; const dt = Math.min(raw, .05);
+  for (const c of g.children) { c.position.x += CLOUD_SPEED * dt; if (c.position.x > CLOUD_SPAN / 2) c.position.x -= CLOUD_SPAN; }
+ });
+ // Soft billboard wisps read as real vapor instead of solid blobs.
+ const tex = useMemo(() => { const c = document.createElement('canvas'); c.width = c.height = 128; const ctx = c.getContext('2d');
+  if (ctx) { const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(.45, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }, []);
+ useEffect(() => () => tex.dispose(), [tex]);
+ return <group ref={group}>{puffs.map((p, i) => <group key={i} position={[p.x, p.y, p.z]} scale={p.s}>
+  {[[0, 0, 2.6], [1.3, -.2, 2], [-1.2, -.25, 1.9], [.3, .4, 1.7]].map(([x, y, s], j) =>
+   <sprite key={j} position={[x, y, 0]} scale={[s * 1.8, s, 1]}><spriteMaterial map={tex} color={color} transparent opacity={.6} depthWrite={false} /></sprite>)}
+ </group>)}</group>;
+}
 const RIGHT = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), GOAL = new THREE.Vector3();
 function Flight({ input, reset, children }: { input: Props['input']; reset: number; children: ReactNode }) {
  const group = useRef<THREE.Group>(null); const vel = useRef(new THREE.Vector3());
@@ -127,6 +148,7 @@ export default function AirplaneScene(props:Props) {
  <Lightformer color={palette.sky} intensity={1.5} position={[-8,3,4]} rotation-y={Math.PI/2} scale={[12,8,1]}/>
  <Lightformer color={palette.white} intensity={1} position={[5,2,-8]} scale={[15,4,1]}/>
  </Environment>
+ <Clouds playing={props.playing&&!reduced} color={palette.white}/>
  <Flight input={props.input} reset={props.reset}><Jet playing={props.playing&&!reduced} progress={props.progress}/></Flight><CameraRig {...props}/>
  </Canvas>;
 }
