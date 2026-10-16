@@ -10,8 +10,24 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 export type AircraftView = 'perspective' | 'side' | 'front' | 'top';
 export type FlightInput = { x: number; y: number };
 type Props = { playing: boolean; view: AircraftView; reset: number; progress: number; zoom: number; input: { current: FlightInput } };
-// Flight feel: gentle airliner response, kept inside the visible stage.
-const SPEED = 3.2, RESPONSE = 2.2, BOUND_H = 3.6, BOUND_V = 1.6;
+// Flight feel: gentle airliner response, roaming the whole visible sky.
+const SPEED = 6, RESPONSE = 2.2, BOUND_H = 11, BOUND_V = 5;
+const CLOUD_SPEED = 14, CLOUD_SPAN = 70;
+function Clouds({ playing, color }: { playing: boolean; color: THREE.Color }) {
+ const group = useRef<THREE.Group>(null);
+ const puffs = useMemo(() => Array.from({ length: 26 }, (_, i) => {
+  const r = (n: number) => { const s = Math.sin((i + 1) * 12.9898 * n) * 43758.5453; return s - Math.floor(s); };
+  return { x: (r(1) - .5) * CLOUD_SPAN, y: (r(2) > .5 ? -1 : 1) * (4 + r(3) * 7), z: (r(4) - .5) * 40, s: 1.6 + r(5) * 3 };
+ }), []);
+ useFrame((_, raw) => {
+  const g = group.current; if (!g || !playing) return; const dt = Math.min(raw, .05);
+  for (const c of g.children) { c.position.x += CLOUD_SPEED * dt; if (c.position.x > CLOUD_SPAN / 2) c.position.x -= CLOUD_SPAN; }
+ });
+ return <group ref={group}>{puffs.map((p, i) => <group key={i} position={[p.x, p.y, p.z]} scale={p.s}>
+  {[[0, 0, 0, 1], [.9, -.15, .3, .75], [-.8, -.2, -.2, .7], [.2, .35, -.3, .65]].map(([x, y, z, s], j) =>
+   <mesh key={j} position={[x, y, z]} scale={[s * 1.4, s * .7, s]}><sphereGeometry args={[1, 16, 12]} /><meshStandardMaterial color={color} roughness={1} transparent opacity={.55} depthWrite={false} /></mesh>)}
+ </group>)}</group>;
+}
 const RIGHT = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), GOAL = new THREE.Vector3();
 function Flight({ input, reset, children }: { input: Props['input']; reset: number; children: ReactNode }) {
  const group = useRef<THREE.Group>(null); const vel = useRef(new THREE.Vector3());
@@ -127,6 +143,7 @@ export default function AirplaneScene(props:Props) {
  <Lightformer color={palette.sky} intensity={1.5} position={[-8,3,4]} rotation-y={Math.PI/2} scale={[12,8,1]}/>
  <Lightformer color={palette.white} intensity={1} position={[5,2,-8]} scale={[15,4,1]}/>
  </Environment>
+ <Clouds playing={props.playing&&!reduced} color={palette.white}/>
  <Flight input={props.input} reset={props.reset}><Jet playing={props.playing&&!reduced} progress={props.progress}/></Flight><CameraRig {...props}/>
  </Canvas>;
 }
