@@ -80,10 +80,15 @@ function Jet({ playing, progress }:Pick<Props,'playing'|'progress'>) {
  const wingMap=useMemo(()=>wingFinish(p.white,p.metal),[p]);
  useEffect(()=>()=>{hull.dispose();nacelle.dispose();wing.dispose();cockpit.dispose();windows?.dispose();blades?.dispose();seams?.dispose();stabilizer.dispose();fin.dispose();winglet.dispose();wingMap.dispose();},[hull,nacelle,wing,cockpit,windows,blades,seams,stabilizer,fin,winglet,wingMap]);
  const label = useMemo(() => {const c=document.createElement('canvas');c.width=1024;c.height=128; const ctx=c.getContext('2d'); if(ctx){ctx.clearRect(0,0,1024,128);ctx.fillStyle=p.teal.getStyle();ctx.font='500 78px Arial';ctx.fillText('A E R O N A U T',15,95);} const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8;return texture;},[p]);
- useEffect(()=>()=>label.dispose(),[label]);
- useFrame((_,rawDelta)=>{
- const jet=group.current;if(!jet)return;const dt=Math.min(rawDelta,.05);
- if(playing){phase.current+=dt;for(const f of [fan.current,fanOther.current])if(f)f.rotation.x+=dt*7;}
+  useEffect(()=>()=>label.dispose(),[label]);
+  const beacon=useRef<THREE.Mesh>(null);
+  // Contrail fades from dense near the engine to nothing far behind (cylinder v runs top to bottom).
+  const trail=useMemo(()=>{const c=document.createElement('canvas');c.width=4;c.height=256;const ctx=c.getContext('2d');if(ctx){const g=ctx.createLinearGradient(0,0,0,256);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.85,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=g;ctx.fillRect(0,0,4,256);}const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;},[]);
+  useEffect(()=>()=>trail.dispose(),[trail]);
+  useFrame((_,rawDelta)=>{
+  const jet=group.current;if(!jet)return;const dt=Math.min(rawDelta,.05);
+  if(playing){phase.current+=dt;for(const f of [fan.current,fanOther.current])if(f)f.rotation.x+=dt*7;}
+  const b=beacon.current?.material;if(b instanceof THREE.MeshBasicMaterial)b.opacity=(phase.current%1.2)<.12?1:.15;
  const ease=1-Math.exp(-4*dt);
  jet.position.y=THREE.MathUtils.lerp(jet.position.y,Math.sin(phase.current*.5)*.065,ease);
  jet.rotation.x=THREE.MathUtils.lerp(jet.rotation.x,Math.sin(phase.current*.28)*.012,ease);
@@ -112,7 +117,12 @@ function Jet({ playing, progress }:Pick<Props,'playing'|'progress'>) {
  <mesh position={[-2.65,-.015,.674]}><planeGeometry args={[2.65,.31]}/><meshBasicMaterial map={label} transparent depthWrite={false}/></mesh>
  {seams&&<mesh geometry={seams}><meshStandardMaterial color={p.metal} roughness={.6}/></mesh>}
  <mesh geometry={cockpit}><meshPhysicalMaterial color={p.glass} metalness={.25} roughness={.12} clearcoat={1} side={THREE.DoubleSide}/></mesh>
- </group>)}
+  {/* Wingtip navigation light: red to port, green to starboard. */}
+  <mesh position={[2.3,.2,5.62]}><sphereGeometry args={[.045,12,8]}/><meshBasicMaterial color={side===1?'#ff3b30':'#34d058'} toneMapped={false}/></mesh>
+  {/* Fading engine contrail streaming behind the nacelle. */}
+  {playing&&<mesh position={[6.9,-.98,1.9]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.32,.06,14,24,1,true]}/><meshBasicMaterial map={trail} color={p.white} transparent opacity={.5} depthWrite={false} side={THREE.DoubleSide}/></mesh>}
+  </group>)}
+  <mesh ref={beacon} position={[.2,.7,0]}><sphereGeometry args={[.04,12,8]}/><meshBasicMaterial color="#ff3b30" toneMapped={false} transparent/></mesh>
  <mesh geometry={fin} castShadow receiveShadow><meshPhysicalMaterial color={p.teal} metalness={.12} roughness={.3} clearcoat={.5} side={THREE.DoubleSide}/></mesh>
  {[-1,1].map(side=><group key={side} scale={[1,1,side]}><mesh position={[5.12,1.91,.07]} rotation={[0,0,-.55]}><planeGeometry args={[.07,.44]}/><meshBasicMaterial color={p.white}/></mesh><mesh position={[5.28,1.85,.065]} rotation={[0,0,-.55]}><planeGeometry args={[.07,.29]}/><meshBasicMaterial color={p.white}/></mesh></group>)}
  </group>;
