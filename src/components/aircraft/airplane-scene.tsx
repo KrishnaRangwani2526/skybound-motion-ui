@@ -17,7 +17,7 @@ function Clouds({ playing, color }: { playing: boolean; color: THREE.Color }) {
  const group = useRef<THREE.Group>(null);
  const puffs = useMemo(() => Array.from({ length: 26 }, (_, i) => {
   const r = (n: number) => { const s = Math.sin((i + 1) * 12.9898 * n) * 43758.5453; return s - Math.floor(s); };
-  return { x: (r(1) - .5) * CLOUD_SPAN, y: (r(2) > .5 ? -1 : 1) * (4 + r(3) * 7), z: (r(4) - .5) * 40, s: 1.6 + r(5) * 3 };
+  return { x: (r(1) - .5) * CLOUD_SPAN, y: (r(2) > .35 ? -1 : 1) * (6 + r(3) * 6), z: -8 - r(4) * 30, s: 1.2 + r(5) * 2.2 };
  }), []);
  useFrame((_, raw) => {
   const g = group.current; if (!g || !playing) return; const dt = Math.min(raw, .05);
@@ -25,7 +25,7 @@ function Clouds({ playing, color }: { playing: boolean; color: THREE.Color }) {
  });
  return <group ref={group}>{puffs.map((p, i) => <group key={i} position={[p.x, p.y, p.z]} scale={p.s}>
   {[[0, 0, 0, 1], [.9, -.15, .3, .75], [-.8, -.2, -.2, .7], [.2, .35, -.3, .65]].map(([x, y, z, s], j) =>
-   <mesh key={j} position={[x, y, z]} scale={[s * 1.4, s * .7, s]}><sphereGeometry args={[1, 16, 12]} /><meshStandardMaterial color={color} roughness={1} transparent opacity={.55} depthWrite={false} /></mesh>)}
+   <mesh key={j} position={[x, y, z]} scale={[s * 1.4, s * .7, s]}><sphereGeometry args={[1, 16, 12]} /><meshStandardMaterial color={color} roughness={1} transparent opacity={.28} depthWrite={false} /></mesh>)}
  </group>)}</group>;
 }
 const RIGHT = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), GOAL = new THREE.Vector3();
