@@ -27,7 +27,7 @@ export const Route = createFileRoute('/')({
 function Index(){
  const [playing,setPlaying]=useState(true);const [view,setView]=useState<AircraftView>('perspective');const [reset,setReset]=useState(0);const [progress,setProgress]=useState(0);const [zoom,setZoom]=useState(1);const [fullscreen,setFullscreen]=useState(false);
  const app=useRef<HTMLDivElement>(null);const steer=useSteering();
- const pad=(d:Dir,label:string,Icon:typeof ChevronUp)=><Button key={d} variant="cockpit" size="icon" className={`pad-${d}`} data-active={steer.active.includes(d)} aria-label={label} title={label} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);steer.press(d);}} onPointerUp={()=>steer.release(d)} onPointerCancel={()=>steer.release(d)} onLostPointerCapture={()=>steer.release(d)}><Icon/></Button>;
+ const pad=(d:Dir,label:string,Icon:typeof ChevronUp)=><Button key={d} variant="cockpit" size="icon" className={`pad-${d}`} data-active={steer.active.includes(d)} aria-label={label} title={label} onPointerDown={e=>{e.preventDefault();steer.press(d);}} onPointerUp={()=>steer.release(d)} onPointerCancel={()=>steer.release(d)} onPointerLeave={()=>steer.release(d)}><Icon/></Button>;
  useEffect(()=>{if(!playing||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const timer=setInterval(()=>setProgress(p=>(p+.1)%30),100);return()=>clearInterval(timer);},[playing]);
  useEffect(()=>{const update=()=>setFullscreen(Boolean(document.fullscreenElement));document.addEventListener('fullscreenchange',update);return()=>document.removeEventListener('fullscreenchange',update);},[]);
  const toggleFullscreen=async()=>{if(document.fullscreenElement){await document.exitFullscreen();}else if(app.current?.requestFullscreen){await app.current.requestFullscreen();}};
