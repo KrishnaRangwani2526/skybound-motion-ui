@@ -1,4 +1,5 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, Lightformer } from '@react-three/drei';
 import { smoothLathe, fuselageGeometry, airfoilGeometry, wingGeometry, cockpitGeometry } from './aircraft-geometry';
@@ -12,7 +13,7 @@ type Props = { playing: boolean; view: AircraftView; reset: number; progress: nu
 // Flight feel: gentle airliner response, kept inside the visible stage.
 const SPEED = 3.2, RESPONSE = 2.2, BOUND_H = 3.6, BOUND_V = 1.6;
 const RIGHT = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), GOAL = new THREE.Vector3();
-function Flight({ input, reset, children }: { input: Props['input']; reset: number; children: React.ReactNode }) {
+function Flight({ input, reset, children }: { input: Props['input']; reset: number; children: ReactNode }) {
  const group = useRef<THREE.Group>(null); const vel = useRef(new THREE.Vector3());
  useEffect(()=>{group.current?.position.set(0,0,0);vel.current.set(0,0,0);},[reset]);
  useFrame((state,raw)=>{
