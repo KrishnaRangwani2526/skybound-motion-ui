@@ -7,7 +7,30 @@ import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 export type AircraftView = 'perspective' | 'side' | 'front' | 'top';
-type Props = { playing: boolean; view: AircraftView; reset: number; progress: number; zoom: number };
+export type FlightInput = { x: number; y: number };
+type Props = { playing: boolean; view: AircraftView; reset: number; progress: number; zoom: number; input: { current: FlightInput } };
+// Flight feel: gentle airliner response, kept inside the visible stage.
+const SPEED = 3.2, RESPONSE = 2.2, BOUND_H = 3.6, BOUND_V = 1.6;
+const RIGHT = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), GOAL = new THREE.Vector3();
+function Flight({ input, reset, children }: { input: Props['input']; reset: number; children: React.ReactNode }) {
+ const group = useRef<THREE.Group>(null); const vel = useRef(new THREE.Vector3());
+ useEffect(()=>{group.current?.position.set(0,0,0);vel.current.set(0,0,0);},[reset]);
+ useFrame((state,raw)=>{
+  const g=group.current;if(!g)return;const dt=Math.min(raw,.05);
+  state.camera.getWorldDirection(RIGHT);RIGHT.y=0;RIGHT.normalize().cross(UP).normalize();
+  const {x,y}=input.current;
+  GOAL.copy(RIGHT).multiplyScalar(x*SPEED).addScaledVector(UP,y*SPEED*.6);
+  vel.current.lerp(GOAL,1-Math.exp(-RESPONSE*dt));
+  g.position.addScaledVector(vel.current,dt);
+  g.position.set(THREE.MathUtils.clamp(g.position.x,-BOUND_H,BOUND_H),THREE.MathUtils.clamp(g.position.y,-BOUND_V,BOUND_V),THREE.MathUtils.clamp(g.position.z,-BOUND_H,BOUND_H));
+  const e=1-Math.exp(-3*dt);
+  // Bank into sideways motion and lift the nose when climbing.
+  g.rotation.x=THREE.MathUtils.lerp(g.rotation.x,THREE.MathUtils.clamp(vel.current.z*.12,-.35,.35),e);
+  g.rotation.z=THREE.MathUtils.lerp(g.rotation.z,THREE.MathUtils.clamp(-vel.current.y*.09,-.2,.2),e);
+  g.rotation.y=THREE.MathUtils.lerp(g.rotation.y,THREE.MathUtils.clamp(vel.current.z*.05,-.15,.15),e);
+ });
+ return <group ref={group}>{children}</group>;
+}
 function usePalette() {
  return useMemo(() => {
  const s = getComputedStyle(document.documentElement);
@@ -103,6 +126,6 @@ export default function AirplaneScene(props:Props) {
  <Lightformer color={palette.sky} intensity={1.5} position={[-8,3,4]} rotation-y={Math.PI/2} scale={[12,8,1]}/>
  <Lightformer color={palette.white} intensity={1} position={[5,2,-8]} scale={[15,4,1]}/>
  </Environment>
- <Jet playing={props.playing&&!reduced} progress={props.progress}/><CameraRig {...props}/>
+ <Flight input={props.input} reset={props.reset}><Jet playing={props.playing&&!reduced} progress={props.progress}/></Flight><CameraRig {...props}/>
  </Canvas>;
 }
