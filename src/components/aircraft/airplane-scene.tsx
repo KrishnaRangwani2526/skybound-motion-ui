@@ -23,9 +23,14 @@ function Clouds({ playing, color }: { playing: boolean; color: THREE.Color }) {
   const g = group.current; if (!g || !playing) return; const dt = Math.min(raw, .05);
   for (const c of g.children) { c.position.x += CLOUD_SPEED * dt; if (c.position.x > CLOUD_SPAN / 2) c.position.x -= CLOUD_SPAN; }
  });
+ // Soft billboard wisps read as real vapor instead of solid blobs.
+ const tex = useMemo(() => { const c = document.createElement('canvas'); c.width = c.height = 128; const ctx = c.getContext('2d');
+  if (ctx) { const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(.45, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }, []);
+ useEffect(() => () => tex.dispose(), [tex]);
  return <group ref={group}>{puffs.map((p, i) => <group key={i} position={[p.x, p.y, p.z]} scale={p.s}>
-  {[[0, 0, 0, 1], [.9, -.15, .3, .75], [-.8, -.2, -.2, .7], [.2, .35, -.3, .65]].map(([x, y, z, s], j) =>
-   <mesh key={j} position={[x, y, z]} scale={[s * 1.4, s * .7, s]}><sphereGeometry args={[1, 16, 12]} /><meshStandardMaterial color={color} roughness={1} transparent opacity={.28} depthWrite={false} /></mesh>)}
+  {[[0, 0, 2.6], [1.3, -.2, 2], [-1.2, -.25, 1.9], [.3, .4, 1.7]].map(([x, y, s], j) =>
+   <sprite key={j} position={[x, y, 0]} scale={[s * 1.8, s, 1]}><spriteMaterial map={tex} color={color} transparent opacity={.6} depthWrite={false} /></sprite>)}
  </group>)}</group>;
 }
 const RIGHT = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), GOAL = new THREE.Vector3();
