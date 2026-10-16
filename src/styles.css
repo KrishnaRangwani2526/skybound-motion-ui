@@ -62,6 +62,11 @@ h1 { font-family:var(--font-display); font-weight:500; font-size:64px; line-heig
 .timeline::-webkit-slider-thumb { transition:box-shadow 250ms var(--motion-ease); }
 .timeline:hover::-webkit-slider-thumb { box-shadow:0 0 0 5px color-mix(in oklab,var(--primary) 12%,transparent); }
 @keyframes scene-reveal { from {opacity:0} to {opacity:1} }
+.flight-pad { position:absolute; z-index:3; right:5%; bottom:160px; display:grid; grid-template-columns:repeat(3,38px); grid-template-rows:auto repeat(3,38px); gap:4px; justify-items:center; touch-action:none; user-select:none; }
+.flight-pad .pad-hint { grid-column:1 / -1; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px; white-space:nowrap; }
+.flight-pad button { width:38px; height:38px; transition:transform 220ms var(--motion-ease),box-shadow 220ms var(--motion-ease),background-color 220ms var(--motion-ease); }
+.flight-pad button[data-active=true] { transform:scale(.92); background:var(--primary); color:var(--primary-foreground); box-shadow:var(--shadow-control); }
+.flight-pad .pad-up { grid-column:2; grid-row:2; } .flight-pad .pad-left { grid-column:1; grid-row:3; } .flight-pad .pad-right { grid-column:3; grid-row:3; } .flight-pad .pad-down { grid-column:2; grid-row:4; }
 .scene-actions { position:absolute; z-index:3; right:5%; bottom:91px; display:flex; gap:8px; }
 .scene-actions button { width:40px; height:40px; }
 .playback { position:absolute; left:5%; right:5%; bottom:22px; z-index:3; display:flex; align-items:center; gap:18px; }
@@ -85,6 +90,7 @@ h1 { font-family:var(--font-display); font-weight:500; font-size:64px; line-heig
  .stage {height:740px; min-height:0} .stage-copy {top:32px} h1 {font-size:43px} .subtitle {font-size:13px} .stage-number {top:192px;font-size:9px} .stage-number strong {font-size:12px}
  .canvas-wrap {inset:150px -15% 150px} .aircraft-tag {bottom:190px} .aircraft-tag .model {font-size:17px}
  .view-controls {bottom:120px; width:max-content} .view-controls button {padding:0 13px;font-size:10px}
+ .flight-pad {bottom:180px; grid-template-columns:repeat(3,34px); grid-template-rows:auto repeat(3,34px)} .flight-pad button {width:34px;height:34px} .flight-pad .pad-hint {display:none}
  .scene-actions {bottom:55px} .playback {bottom:58px;right:32%} .scene-label {display:none} .playback {gap:10px} .time {min-width:65px;font-size:9px} .playback > button:last-child {display:none}
  .stats {grid-template-columns:repeat(2,1fr); gap:25px 0; padding:25px 0} .stat {padding-left:20px} .stat:first-child {grid-column:1 / -1} .stat:nth-child(2),.stat:nth-child(4) {padding-left:0;border:0} .stat-value {font-size:20px} .bottom {font-size:9px;gap:15px}
 }
