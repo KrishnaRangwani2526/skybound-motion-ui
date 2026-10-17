@@ -29,7 +29,7 @@ function Clouds({ playing }: { playing: boolean }) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }, []);
  useEffect(() => () => tex.dispose(), [tex]);
  return <group ref={group}>{puffs.map((p, i) => <group key={i} position={[p.x, p.y, p.z]} scale={p.s}>
-  {[[0, 0, 2.6], [1.3, -.2, 2], [-1.2, -.25, 1.9], [.3, .4, 1.7]].map(([x, y, s], j) =>
+  {([[0, 0, 2.6], [1.3, -.2, 2], [-1.2, -.25, 1.9], [.3, .4, 1.7]] as [number, number, number][]).map(([x, y, s], j) =>
    <sprite key={j} position={[x, y, 0]} scale={[s * 1.8, s, 1]}><spriteMaterial map={tex} color="#ffffff" transparent opacity={.6} depthWrite={false} toneMapped={false} /></sprite>)}
  </group>)}</group>;
 }
