@@ -11,7 +11,7 @@ export type AircraftView = 'perspective' | 'side' | 'front' | 'top';
 export type FlightInput = { x: number; y: number };
 type Props = { playing: boolean; view: AircraftView; reset: number; progress: number; zoom: number; input: { current: FlightInput } };
 // Flight feel: gentle airliner response, roaming the whole visible sky.
-const CLOUD_SPEED = 14, CLOUD_SPAN = 70;
+const CLOUD_SPEED = 6, CLOUD_SPAN = 70;
 function Clouds({ playing }: { playing: boolean }) {
  const group = useRef<THREE.Group>(null);
  const puffs = useMemo(() => Array.from({ length: 26 }, (_, i) => {
@@ -20,7 +20,7 @@ function Clouds({ playing }: { playing: boolean }) {
  }), []);
  useFrame((_, raw) => {
   const g = group.current; if (!g || !playing) return; const dt = Math.min(raw, .05);
-  for (const c of g.children) { c.position.x += CLOUD_SPEED * dt; if (c.position.x > CLOUD_SPAN / 2) c.position.x -= CLOUD_SPAN; }
+  for (const c of g.children) { c.position.x -= CLOUD_SPEED * dt; if (c.position.x < -CLOUD_SPAN / 2) c.position.x += CLOUD_SPAN; }
  });
  // Soft billboard wisps read as real vapor instead of solid blobs.
  const tex = useMemo(() => { const c = document.createElement('canvas'); c.width = c.height = 128; const ctx = c.getContext('2d');
