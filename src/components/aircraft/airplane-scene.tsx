@@ -57,7 +57,7 @@ function Flight({ playing, reset, children }: { playing: boolean; reset: number;
   g.rotateZ(roll.current);
  });
  // Inner rotation points the jet's nose (local -x) along the travel direction (+z for lookAt).
- return <group ref={group}><group rotation-y={Math.PI/2}>{children}</group></group>;
+ return <group ref={group}><group rotation-y={Math.PI/2} scale={.72}>{children}</group></group>;
 }
 function usePalette() {
  return useMemo(() => {
