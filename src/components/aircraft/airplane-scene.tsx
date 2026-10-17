@@ -30,7 +30,7 @@ function Clouds({ playing, color }: { playing: boolean; color: THREE.Color }) {
  useEffect(() => () => tex.dispose(), [tex]);
  return <group ref={group}>{puffs.map((p, i) => <group key={i} position={[p.x, p.y, p.z]} scale={p.s}>
   {[[0, 0, 2.6], [1.3, -.2, 2], [-1.2, -.25, 1.9], [.3, .4, 1.7]].map(([x, y, s], j) =>
-   <sprite key={j} position={[x, y, 0]} scale={[s * 1.8, s, 1]}><spriteMaterial map={tex} color={color} transparent opacity={.6} depthWrite={false} /></sprite>)}
+   <sprite key={j} position={[x, y, 0]} scale={[s * 1.8, s, 1]}><spriteMaterial map={tex} color={color} transparent opacity={.6} depthWrite={false} toneMapped={false} /></sprite>)}
  </group>)}</group>;
 }
 const RIGHT = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), GOAL = new THREE.Vector3();
@@ -120,7 +120,7 @@ function Jet({ playing, progress }:Pick<Props,'playing'|'progress'>) {
   {/* Wingtip navigation light: red to port, green to starboard. */}
   <mesh position={[2.3,.2,5.62]}><sphereGeometry args={[.045,12,8]}/><meshBasicMaterial color={side===1?'#ff3b30':'#34d058'} toneMapped={false}/></mesh>
   {/* Fading engine contrail streaming behind the nacelle. */}
-  {playing&&<mesh position={[6.9,-.98,1.9]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.32,.06,14,24,1,true]}/><meshBasicMaterial map={trail} color={p.white} transparent opacity={.5} depthWrite={false} side={THREE.DoubleSide}/></mesh>}
+  {playing&&<mesh position={[6.9,-.98,1.9]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.32,.06,14,24,1,true]}/><meshBasicMaterial map={trail} color={p.white} transparent opacity={.5} depthWrite={false} toneMapped={false} side={THREE.DoubleSide}/></mesh>}
   </group>)}
   <mesh ref={beacon} position={[.2,.7,0]}><sphereGeometry args={[.04,12,8]}/><meshBasicMaterial color="#ff3b30" toneMapped={false} transparent/></mesh>
  <mesh geometry={fin} castShadow receiveShadow><meshPhysicalMaterial color={p.teal} metalness={.12} roughness={.3} clearcoat={.5} side={THREE.DoubleSide}/></mesh>
