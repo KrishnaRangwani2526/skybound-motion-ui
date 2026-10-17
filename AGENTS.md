@@ -13,4 +13,4 @@
 - Build aircraft geometry procedurally with Three.js and use the global design system for interface and scene color roles; this keeps the aircraft interactive without remote model dependencies.
 - Keep aircraft profile and airfoil geometry in a browser-safe, tested geometry module, merge repeated details, and damp camera presets using frame delta; this preserves smooth motion without rebuilding static surfaces.
 - Derive fitted cabin details from the shared hull surface and keep detail geometry and procedural textures in the aircraft detail module; this prevents floating windows and separates finishing work from scene orchestration.
-- Feed steering input to the scene through a shared mutable ref read inside the frame loop, moving the aircraft relative to the camera within fixed bounds; this keeps flight smooth without per-frame React renders.
+- The aircraft flies an automatic curved path computed from time inside the frame loop, oriented along the camera's screen-right axis; this keeps motion smooth without per-frame React renders.

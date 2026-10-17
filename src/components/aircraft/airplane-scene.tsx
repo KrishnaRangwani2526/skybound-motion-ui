@@ -11,8 +11,7 @@ export type AircraftView = 'perspective' | 'side' | 'front' | 'top';
 export type FlightInput = { x: number; y: number };
 type Props = { playing: boolean; view: AircraftView; reset: number; progress: number; zoom: number; input: { current: FlightInput } };
 // Flight feel: gentle airliner response, roaming the whole visible sky.
-const SPEED = 6, RESPONSE = 2.2, BOUND_H = 11, BOUND_V = 5;
-const CLOUD_SPEED = 14, CLOUD_SPAN = 70;
+const CLOUD_SPEED = 6, CLOUD_SPAN = 70;
 function Clouds({ playing }: { playing: boolean }) {
  const group = useRef<THREE.Group>(null);
  const puffs = useMemo(() => Array.from({ length: 26 }, (_, i) => {
@@ -21,7 +20,7 @@ function Clouds({ playing }: { playing: boolean }) {
  }), []);
  useFrame((_, raw) => {
   const g = group.current; if (!g || !playing) return; const dt = Math.min(raw, .05);
-  for (const c of g.children) { c.position.x += CLOUD_SPEED * dt; if (c.position.x > CLOUD_SPAN / 2) c.position.x -= CLOUD_SPAN; }
+  for (const c of g.children) { c.position.x -= CLOUD_SPEED * dt; if (c.position.x < -CLOUD_SPAN / 2) c.position.x += CLOUD_SPAN; }
  });
  // Soft billboard wisps read as real vapor instead of solid blobs.
  const tex = useMemo(() => { const c = document.createElement('canvas'); c.width = c.height = 128; const ctx = c.getContext('2d');
@@ -33,25 +32,32 @@ function Clouds({ playing }: { playing: boolean }) {
    <sprite key={j} position={[x, y, 0]} scale={[s * 1.8, s, 1]}><spriteMaterial map={tex} color="#ffffff" transparent opacity={.6} depthWrite={false} toneMapped={false} /></sprite>)}
  </group>)}</group>;
 }
-const RIGHT = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), GOAL = new THREE.Vector3();
-function Flight({ input, reset, children }: { input: Props['input']; reset: number; children: ReactNode }) {
- const group = useRef<THREE.Group>(null); const vel = useRef(new THREE.Vector3());
- useEffect(()=>{group.current?.position.set(0,0,0);vel.current.set(0,0,0);},[reset]);
+// Autopilot: the jet crosses the screen left to right on a gentle curved, climbing and banking path.
+const CROSS_TIME = 18, CROSS_HALF = 15;
+const RIGHT = new THREE.Vector3(), FWD = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), POS = new THREE.Vector3(), NEXT = new THREE.Vector3();
+function pathPoint(t:number,out:THREE.Vector3){
+ // t in [0,1): position along screen-right, with S-curve depth weave and soft climb/descent.
+ const s=THREE.MathUtils.lerp(-CROSS_HALF,CROSS_HALF,t);
+ const y=Math.sin(t*Math.PI*2)*1.1+Math.sin(t*Math.PI*5)*.25-.4;
+ const d=Math.sin(t*Math.PI*2+.6)*3.2;
+ return out.copy(RIGHT).multiplyScalar(s).addScaledVector(UP,y).addScaledVector(FWD,d);
+}
+function Flight({ playing, reset, children }: { playing: boolean; reset: number; children: ReactNode }) {
+ const group = useRef<THREE.Group>(null); const t = useRef(.32); const roll = useRef(0);
+ useEffect(()=>{t.current=.32;},[reset]);
  useFrame((state,raw)=>{
   const g=group.current;if(!g)return;const dt=Math.min(raw,.05);
-  state.camera.getWorldDirection(RIGHT);RIGHT.y=0;RIGHT.normalize().cross(UP).normalize();
-  const {x,y}=input.current;
-  GOAL.copy(RIGHT).multiplyScalar(x*SPEED).addScaledVector(UP,y*SPEED*.6);
-  vel.current.lerp(GOAL,1-Math.exp(-RESPONSE*dt));
-  g.position.addScaledVector(vel.current,dt);
-  g.position.set(THREE.MathUtils.clamp(g.position.x,-BOUND_H,BOUND_H),THREE.MathUtils.clamp(g.position.y,-BOUND_V,BOUND_V),THREE.MathUtils.clamp(g.position.z,-BOUND_H,BOUND_H));
-  const e=1-Math.exp(-3*dt);
-  // Bank into sideways motion and lift the nose when climbing.
-  g.rotation.x=THREE.MathUtils.lerp(g.rotation.x,THREE.MathUtils.clamp(vel.current.z*.12,-.35,.35),e);
-  g.rotation.z=THREE.MathUtils.lerp(g.rotation.z,THREE.MathUtils.clamp(-vel.current.y*.09,-.2,.2),e);
-  g.rotation.y=THREE.MathUtils.lerp(g.rotation.y,THREE.MathUtils.clamp(vel.current.z*.05,-.15,.15),e);
+  if(playing)t.current=(t.current+dt/CROSS_TIME)%1;
+  state.camera.getWorldDirection(FWD);FWD.y=0;FWD.normalize();RIGHT.copy(FWD).cross(UP).normalize();
+  pathPoint(t.current,POS);pathPoint(t.current+.004,NEXT);
+  g.position.copy(POS);g.lookAt(NEXT);
+  // Bank into the turn: roll follows the curvature of the depth weave.
+  const turn=-Math.sin(t.current*Math.PI*2+.6);
+  roll.current=THREE.MathUtils.lerp(roll.current,turn*.38,1-Math.exp(-3*dt));
+  g.rotateZ(roll.current);
  });
- return <group ref={group}>{children}</group>;
+ // Inner rotation points the jet's nose (local -x) along the travel direction (+z for lookAt).
+ return <group ref={group}><group rotation-y={Math.PI/2} scale={.72}>{children}</group></group>;
 }
 function usePalette() {
  return useMemo(() => {
@@ -159,6 +165,6 @@ export default function AirplaneScene(props:Props) {
  <Lightformer color={palette.white} intensity={1} position={[5,2,-8]} scale={[15,4,1]}/>
  </Environment>
  <Clouds playing={props.playing&&!reduced}/>
- <Flight input={props.input} reset={props.reset}><Jet playing={props.playing&&!reduced} progress={props.progress}/></Flight><CameraRig {...props}/>
+ <Flight playing={props.playing} reset={props.reset}><Jet playing={props.playing&&!reduced} progress={props.progress}/></Flight><CameraRig {...props}/>
  </Canvas>;
 }
