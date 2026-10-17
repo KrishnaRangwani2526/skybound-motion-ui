@@ -57,7 +57,7 @@ function Flight({ playing, reset, children }: { playing: boolean; reset: number;
   g.rotateZ(roll.current);
  });
  // Inner rotation points the jet's nose (local -x) along the travel direction (+z for lookAt).
- return <group ref={group}><group rotation-y={Math.PI/2} scale={.72}>{children}</group></group>;
+ return <group ref={group}><group rotation-y={Math.PI/2} scale={.5}>{children}</group></group>;
 }
 function usePalette() {
  return useMemo(() => {
@@ -156,7 +156,7 @@ function CameraRig({view,reset,zoom}:Pick<Props,'view'|'reset'|'zoom'>) {
 export default function AirplaneScene(props:Props) {
  const [reduced,setReduced]=useState(false); useEffect(()=>setReduced(matchMedia('(prefers-reduced-motion: reduce)').matches),[]);
  const palette=usePalette();
- return <Canvas shadows camera={{position:[-12,7.5,14],fov:38}} dpr={[1,2]} gl={{antialias:true,alpha:true}}>
+ return <Canvas shadows camera={{position:[-12,7.5,14],fov:38}} dpr={[1,2]} gl={{antialias:true,alpha:true,toneMapping:THREE.ACESFilmicToneMapping,toneMappingExposure:1.1}}>
  <ambientLight intensity={.45}/><hemisphereLight args={[palette.sky,palette.metal,.8]}/>
  <directionalLight position={[-8,12,8]} intensity={2.4} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-camera-left={-9} shadow-camera-right={9} shadow-camera-top={9} shadow-camera-bottom={-9} shadow-normalBias={.035}/><directionalLight position={[5,3,-8]} intensity={.7}/>
  <Environment resolution={128}>
