@@ -26,7 +26,7 @@ export const Route = createFileRoute('/')({
 });
 function Index(){
  const [playing,setPlaying]=useState(true);const [view,setView]=useState<AircraftView>('perspective');const [reset,setReset]=useState(0);const [progress,setProgress]=useState(0);const [zoom,setZoom]=useState(1);const [fullscreen,setFullscreen]=useState(false);
- const app=useRef<HTMLDivElement>(null);const steer=useSteering();
+ const app=useRef<HTMLDivElement>(null);const brand=useRef<HTMLAnchorElement>(null);const steer=useSteering();
  const pad=(d:Dir,label:string,Icon:typeof ChevronUp)=><Button key={d} variant="cockpit" size="icon" className={`pad-${d}`} data-active={steer.active.includes(d)} aria-label={label} title={label} onPointerDown={e=>{e.preventDefault();steer.press(d);}} onPointerUp={()=>steer.release(d)} onPointerCancel={()=>steer.release(d)} onPointerLeave={()=>steer.release(d)}><Icon/></Button>;
  useEffect(()=>{if(!playing||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const timer=setInterval(()=>setProgress(p=>(p+.1)%30),100);return()=>clearInterval(timer);},[playing]);
  useEffect(()=>{const update=()=>setFullscreen(Boolean(document.fullscreenElement));document.addEventListener('fullscreenchange',update);return()=>document.removeEventListener('fullscreenchange',update);},[]);
@@ -34,13 +34,13 @@ function Index(){
  const restart=()=>{setView('perspective');setReset(r=>r+1);setZoom(1);setProgress(0);};
  const time=`00:${Math.floor(progress).toString().padStart(2,'0')}`;
  return <div className="flight-app" ref={app}>
- <header className="topbar"><a href="/" className="brand" aria-label="Aeronaut home"><Plane className="brand-symbol" strokeWidth={2.2}/>aeronaut<span className="text-primary">.</span></a><div className="top-center"><span className="status-dot"/>An aviation experience</div><span className="edition">EXPLORER SERIES &nbsp; / &nbsp; 001</span></header>
+ <header className="topbar"><a href="/" ref={brand} className="brand" aria-label="Aeronaut home"><Plane className="brand-symbol" strokeWidth={2.2}/>aeronaut<span className="text-primary">.</span></a><div className="top-center"><span className="status-dot"/>An aviation experience</div><span className="edition">EXPLORER SERIES &nbsp; / &nbsp; 001</span></header>
  <main>
  <section className="stage" aria-label="Interactive 3D passenger airplane">
  <img className="sky" src={sky} width={1920} height={1088} alt="Sunlit clouds from cruising altitude"/>
  <div className="stage-copy"><div className="eyebrow">A different perspective</div><h1>The art of flight.</h1><p className="subtitle">Precision in every curve. Freedom in every mile.<br/>A closer look at the extraordinary.</p></div>
  <div className="stage-number"><strong>Above & beyond</strong>35,000 FT &nbsp; / &nbsp; CLEAR SKIES</div>
- <div className="canvas-wrap"><ClientOnly fallback={<div className="canvas-loading">Preparing for takeoff…</div>}><Suspense fallback={<div className="canvas-loading">Preparing for takeoff…</div>}><AirplaneScene playing={playing} view={view} reset={reset} progress={progress/30} zoom={zoom} input={steer.input}/></Suspense></ClientOnly></div>
+ <div className="canvas-wrap"><ClientOnly fallback={<div className="canvas-loading">Preparing for takeoff…</div>}><Suspense fallback={<div className="canvas-loading">Preparing for takeoff…</div>}><AirplaneScene playing={playing} view={view} reset={reset} progress={progress/30} zoom={zoom} input={steer.input} dock={brand}/></Suspense></ClientOnly></div>
  <div className="aircraft-tag"><div className="eyebrow">The aircraft</div><div className="model">Aeronaut A320 <span>01 / 01</span></div><div className="desc">Narrow-body. Wide possibilities.</div></div>
  <div className="view-controls" aria-label="Camera views">{(['perspective','side','front','top'] as AircraftView[]).map(v=><Button key={v} variant="view" data-active={view===v} aria-pressed={view===v} onClick={()=>setView(v)}>{v==='perspective'?'Perspective':v==='side'?'Side view':v==='front'?'Front view':'Top view'}</Button>)}</div>
  <div className="scene-actions"><Button variant="cockpit" size="icon" title="Reset view" aria-label="Reset view" onClick={restart}><RotateCcw/></Button><Button variant="cockpit" size="icon" title={fullscreen?'Exit fullscreen':'Enter fullscreen'} aria-label={fullscreen?'Exit fullscreen':'Enter fullscreen'} onClick={toggleFullscreen}><Expand/></Button></div>
