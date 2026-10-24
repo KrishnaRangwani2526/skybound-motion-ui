@@ -9,7 +9,7 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 export type AircraftView = 'perspective' | 'side' | 'front' | 'top';
 export type FlightInput = { x: number; y: number };
-type Props = { playing: boolean; view: AircraftView; reset: number; progress: number; zoom: number; input: { current: FlightInput } };
+type Props = { playing: boolean; view: AircraftView; reset: number; progress: number; zoom: number; input: { current: FlightInput }; dock: { current: HTMLElement | null } };
 // Flight feel: gentle airliner response, roaming the whole visible sky.
 const CLOUD_SPEED = 6, CLOUD_SPAN = 70;
 function Clouds({ playing }: { playing: boolean }) {
@@ -32,29 +32,128 @@ function Clouds({ playing }: { playing: boolean }) {
    <sprite key={j} position={[x, y, 0]} scale={[s * 1.8, s, 1]}><spriteMaterial map={tex} color="#ffffff" transparent opacity={.6} depthWrite={false} toneMapped={false} /></sprite>)}
  </group>)}</group>;
 }
-// Autopilot: the jet crosses the screen left to right on a gentle curved, climbing and banking path.
-const CROSS_TIME = 18, CROSS_HALF = 15;
+// Autopilot: the jet crosses left to right, shrinks into its small icon mark at
+// the far end, then glides back with a fading gradient and docks into the
+// Aeronaut brand icon before taking off again from the left.
+const CROSS_TIME = 18, CROSS_HALF = 15, SHRINK_TIME = 1.8, DOCK_HOLD = 1.7, DOCK_FADE = .9;
 const RIGHT = new THREE.Vector3(), FWD = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), POS = new THREE.Vector3(), NEXT = new THREE.Vector3();
+const DIR = new THREE.Vector3(), SWAY = new THREE.Vector3(), UNP = new THREE.Vector3(), LOOK = new THREE.Vector3();
 function pathPoint(t:number,out:THREE.Vector3){
- // t in [0,1): position along screen-right, with S-curve depth weave and soft climb/descent.
+ // t in [0,1]: position along screen-right, with S-curve depth weave and soft climb/descent.
  const s=THREE.MathUtils.lerp(-CROSS_HALF,CROSS_HALF,t);
  const y=Math.sin(t*Math.PI*2)*1.1+Math.sin(t*Math.PI*5)*.25-.4;
  const d=Math.sin(t*Math.PI*2+.6)*3.2;
  return out.copy(RIGHT).multiplyScalar(s).addScaledVector(UP,y).addScaledVector(FWD,d);
 }
-function Flight({ playing, reset, children }: { playing: boolean; reset: number; children: ReactNode }) {
- const group = useRef<THREE.Group>(null); const t = useRef(.32); const roll = useRef(0);
- useEffect(()=>{t.current=.32;},[reset]);
+// Project the brand icon's on-screen position into the flight volume so the jet can dock into it.
+function dockPoint(state:{camera:THREE.Camera;gl:{domElement:HTMLCanvasElement}},el:HTMLElement|null,out:THREE.Vector3){
+ const cr=state.gl.domElement.getBoundingClientRect();
+ let nx=-.85,ny=.9;
+ const r=el?.getBoundingClientRect();
+ if(r&&r.width>0&&cr.width>0){
+  nx=((r.left+r.width/2-cr.left)/cr.width)*2-1;
+  ny=-(((r.top+r.height/2-cr.top)/cr.height)*2-1);
+  // The logo sits above the canvas: dock just inside the canvas corner beneath it.
+  if(ny>1)ny=.9; if(nx<-1)nx=-.85;
+ }
+ UNP.set(nx,ny,.5).unproject(state.camera);
+ return out.copy(state.camera.position).addScaledVector(UNP.sub(state.camera.position).normalize(),state.camera.position.length()*1.05);
+}
+// Gradient fade: multiplies every material's opacity while remembering its resting state.
+function applyFade(g:THREE.Object3D,o:number){
+ g.traverse(obj=>{
+  const m=(obj as THREE.Mesh).material as THREE.Material|THREE.Material[]|undefined;
+  if(!m)return;
+  for(const mat of Array.isArray(m)?m:[m]){
+   const any=mat as THREE.Material&{__keepT?:boolean;__baseO?:number};
+   if(any.__baseO===undefined){any.__baseO=mat.opacity;any.__keepT=mat.transparent;}
+   if(o<1){mat.transparent=true;mat.opacity=any.__baseO*o;}
+   else{mat.transparent=any.__keepT;mat.opacity=any.__baseO;}
+  }
+ });
+}
+function Flight({playing,reset,dock,children}:{playing:boolean;reset:number;dock:{current:HTMLElement|null};children:ReactNode}){
+ const group=useRef<THREE.Group>(null);
+ const phase=useRef<'cross'|'shrink'|'return'|'docked'>('cross');
+ const t=useRef(0);const pt=useRef(0);const cycle=useRef(0);
+ const scale=useRef(1);const fade=useRef(1);const roll=useRef(0);
+ const facing=useRef(new THREE.Vector3(1,0,0));
+ const seen=useRef(reset);
+ const goal=useMemo(()=>new THREE.Vector3(-24,10,0),[]);
  useFrame((state,raw)=>{
-  const g=group.current;if(!g)return;const dt=Math.min(raw,.05);
-  if(playing)t.current=(t.current+dt/CROSS_TIME)%1;
+  const g=group.current;if(!g)return;
+  const dt=Math.min(raw,.05);
+  if(seen.current!==reset){
+   seen.current=reset;
+   phase.current='cross';t.current=0;pt.current=0;cycle.current=0;scale.current=1;fade.current=1;roll.current=0;
+   facing.current.set(1,0,0);applyFade(g,1);
+   dock.current?.classList.remove('brand-docked');
+  }
+  if(!playing)return;
   state.camera.getWorldDirection(FWD);FWD.y=0;FWD.normalize();RIGHT.copy(FWD).cross(UP).normalize();
-  pathPoint(t.current,POS);pathPoint(t.current+.004,NEXT);
-  g.position.copy(POS);g.lookAt(NEXT);
-  // Bank into the turn: roll follows the curvature of the depth weave.
-  const turn=-Math.sin(t.current*Math.PI*2+.6);
-  roll.current=THREE.MathUtils.lerp(roll.current,turn*.38,1-Math.exp(-3*dt));
+  const ease=1-Math.exp(-4*dt);
+  const dir=DIR.copy(RIGHT);
+  if(phase.current==='cross'){
+   const nt=t.current+dt/CROSS_TIME;
+   if(nt>=1){t.current=1;phase.current='shrink';pt.current=0;}
+   else t.current=nt;
+   pathPoint(t.current,POS);pathPoint(Math.min(t.current+.004,1),NEXT);
+   g.position.copy(POS);dir.copy(NEXT).sub(POS);
+   if(dir.lengthSq()<1e-6)dir.copy(RIGHT);
+   // Bank into the turn: roll follows the curvature of the depth weave.
+   const turn=-Math.sin(t.current*Math.PI*2+.6);
+   roll.current=THREE.MathUtils.lerp(roll.current,turn*.38,ease);
+   scale.current=THREE.MathUtils.lerp(scale.current,1,ease);
+   cycle.current+=dt;
+  }else if(phase.current==='shrink'){
+   // Drift past the right edge while easing down to icon size.
+   pt.current+=dt;
+   const k=THREE.MathUtils.smoothstep(Math.min(pt.current/SHRINK_TIME,1),0,1);
+   pathPoint(1,POS);
+   POS.addScaledVector(RIGHT,pt.current*2.2).addScaledVector(UP,pt.current*.9);
+   g.position.copy(POS);
+   dir.copy(RIGHT).addScaledVector(UP,.35).normalize();
+   roll.current=THREE.MathUtils.lerp(roll.current,0,ease);
+   scale.current=THREE.MathUtils.lerp(1,.16,k);
+   if(pt.current>=SHRINK_TIME){phase.current='return';pt.current=0;dockPoint(state,dock.current,goal);}
+  }else if(phase.current==='return'){
+   // Glide back toward the brand icon, slowing as it approaches, with a gentle sway.
+   pt.current+=dt;
+   dockPoint(state,dock.current,goal);
+   const dist=goal.distanceTo(g.position);
+   dir.copy(goal).sub(g.position).divideScalar(dist||1);
+   SWAY.copy(dir).cross(UP).normalize();
+   dir.addScaledVector(SWAY,Math.sin(pt.current*2.2)*.35*Math.min(dist/14,1)).normalize();
+   const speed=THREE.MathUtils.clamp(dist*1.5,.8,9);
+   g.position.addScaledVector(dir,speed*dt);
+   scale.current=THREE.MathUtils.lerp(scale.current,.13,1-Math.exp(-2.5*dt));
+   roll.current=THREE.MathUtils.lerp(roll.current,Math.sin(pt.current*2.2)*-.3,ease);
+   if(dist<.5){phase.current='docked';pt.current=0;dock.current?.classList.add('brand-docked');}
+  }else{
+   // Docked: settle into the icon spot, fade out, then take off from the left again.
+   pt.current+=dt;
+   dockPoint(state,dock.current,goal);
+   g.position.lerp(goal,1-Math.exp(-6*dt));
+   dir.copy(RIGHT).negate();
+   roll.current=THREE.MathUtils.lerp(roll.current,0,ease);
+   scale.current=THREE.MathUtils.lerp(scale.current,.11,ease);
+   if(pt.current>=DOCK_HOLD){
+    phase.current='cross';t.current=0;cycle.current=0;
+    scale.current=1;fade.current=0;roll.current=0;facing.current.copy(RIGHT);
+    pathPoint(0,POS);g.position.copy(POS);
+    dock.current?.classList.remove('brand-docked');
+   }
+  }
+  // Nose eases toward the travel direction so turns sweep like a real airliner.
+  facing.current.lerp(dir,1-Math.exp(-3*dt)).normalize();
+  if(facing.current.lengthSq()<.5)facing.current.copy(RIGHT);
+  g.lookAt(LOOK.copy(g.position).add(facing.current));
   g.rotateZ(roll.current);
+  g.scale.setScalar(scale.current);
+  let target=1;
+  if(phase.current==='docked')target=Math.max(0,1-pt.current/DOCK_FADE);
+  else if(phase.current==='cross'&&cycle.current<.6)target=cycle.current/.6;
+  if(Math.abs(target-fade.current)>.004){fade.current=target;applyFade(g,target);}
  });
  // Inner rotation points the jet's nose (local -x) along the travel direction (+z for lookAt).
  return <group ref={group}><group rotation-y={Math.PI/2} scale={.5}>{children}</group></group>;
@@ -165,6 +264,6 @@ export default function AirplaneScene(props:Props) {
  <Lightformer color={palette.white} intensity={1} position={[5,2,-8]} scale={[15,4,1]}/>
  </Environment>
  <Clouds playing={props.playing&&!reduced}/>
- <Flight playing={props.playing} reset={props.reset}><Jet playing={props.playing&&!reduced} progress={props.progress}/></Flight><CameraRig {...props}/>
+ <Flight playing={props.playing} reset={props.reset} dock={props.dock}><Jet playing={props.playing&&!reduced} progress={props.progress}/></Flight><CameraRig {...props}/>
  </Canvas>;
 }
