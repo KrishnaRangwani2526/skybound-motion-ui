@@ -31,6 +31,13 @@
 .topbar { height:96px; margin:0 5%; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
 .brand { display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-size:24px; font-weight:800; }
 .brand-symbol { width:29px; height:29px; transform:rotate(-35deg); }
+.brand-docked .brand-symbol { animation:brand-dock 1.5s var(--motion-ease); }
+@keyframes brand-dock {
+ 0% { filter:drop-shadow(0 0 0 transparent); }
+ 30% { transform:rotate(-35deg) scale(1.55); filter:drop-shadow(0 0 10px color-mix(in oklab,var(--primary) 55%,transparent)); }
+ 60% { transform:rotate(-35deg) scale(.92); }
+ 100% { transform:rotate(-35deg) scale(1); filter:drop-shadow(0 0 0 transparent); }
+}
 .top-center { display:flex; align-items:center; gap:9px; font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--muted-foreground); }
 .status-dot { width:6px; height:6px; border-radius:50%; background:var(--signal); box-shadow:0 0 0 4px color-mix(in oklab,var(--signal) 10%,transparent); }
 .edition { font-size:12px; color:var(--muted-foreground); }
