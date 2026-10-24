@@ -35,7 +35,7 @@ function Clouds({ playing }: { playing: boolean }) {
 // Autopilot: the jet crosses left to right, shrinks into its small icon mark at
 // the far end, then glides back with a fading gradient and docks into the
 // Aeronaut brand icon before taking off again from the left.
-const CROSS_TIME = 18, CROSS_HALF = 15, SHRINK_TIME = 1.8, DOCK_HOLD = 1.7, DOCK_FADE = .9;
+const CROSS_TIME = 3, CROSS_HALF = 15, SHRINK_TIME = 1.8, DOCK_HOLD = 1.7, DOCK_FADE = .9;
 const RIGHT = new THREE.Vector3(), FWD = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), POS = new THREE.Vector3(), NEXT = new THREE.Vector3();
 const DIR = new THREE.Vector3(), SWAY = new THREE.Vector3(), UNP = new THREE.Vector3(), LOOK = new THREE.Vector3();
 function pathPoint(t:number,out:THREE.Vector3){
