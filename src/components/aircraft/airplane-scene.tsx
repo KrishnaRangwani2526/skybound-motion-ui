@@ -68,7 +68,7 @@ function applyFade(g:THREE.Object3D,o:number){
    const any=mat as THREE.Material&{__keepT?:boolean;__baseO?:number};
    if(any.__baseO===undefined){any.__baseO=mat.opacity;any.__keepT=mat.transparent;}
    if(o<1){mat.transparent=true;mat.opacity=any.__baseO*o;}
-   else{mat.transparent=any.__keepT;mat.opacity=any.__baseO;}
+   else{mat.transparent=any.__keepT??mat.transparent;mat.opacity=any.__baseO;}
   }
  });
 }
