@@ -35,15 +35,13 @@ function Clouds({ playing }: { playing: boolean }) {
 // Autopilot: the jet crosses left to right, shrinks into its small icon mark at
 // the far end, then glides back with a fading gradient and docks into the
 // Aeronaut brand icon before taking off again from the left.
-const CROSS_TIME = 18, CROSS_HALF = 15, SHRINK_TIME = 1.8, DOCK_HOLD = 1.7, DOCK_FADE = .9;
+const CROSS_TIME = 10, CROSS_HALF = 15, SHRINK_TIME = 1.8, DOCK_HOLD = 1.7, DOCK_FADE = .9;
 const RIGHT = new THREE.Vector3(), FWD = new THREE.Vector3(), UP = new THREE.Vector3(0,1,0), POS = new THREE.Vector3(), NEXT = new THREE.Vector3();
 const DIR = new THREE.Vector3(), SWAY = new THREE.Vector3(), UNP = new THREE.Vector3(), LOOK = new THREE.Vector3();
 function pathPoint(t:number,out:THREE.Vector3){
- // t in [0,1]: position along screen-right, with S-curve depth weave and soft climb/descent.
+ // Stage one glides dead straight: a level line across the screen at a fixed depth.
  const s=THREE.MathUtils.lerp(-CROSS_HALF,CROSS_HALF,t);
- const y=Math.sin(t*Math.PI*2)*1.1+Math.sin(t*Math.PI*5)*.25-.4;
- const d=Math.sin(t*Math.PI*2+.6)*3.2;
- return out.copy(RIGHT).multiplyScalar(s).addScaledVector(UP,y).addScaledVector(FWD,d);
+ return out.copy(RIGHT).multiplyScalar(s).addScaledVector(UP,-.2);
 }
 // Project the brand icon's on-screen position into the flight volume so the jet can dock into it.
 function dockPoint(state:{camera:THREE.Camera;gl:{domElement:HTMLCanvasElement}},el:HTMLElement|null,out:THREE.Vector3){
@@ -100,9 +98,8 @@ function Flight({playing,reset,dock,children}:{playing:boolean;reset:number;dock
    pathPoint(t.current,POS);pathPoint(Math.min(t.current+.004,1),NEXT);
    g.position.copy(POS);dir.copy(NEXT).sub(POS);
    if(dir.lengthSq()<1e-6)dir.copy(RIGHT);
-   // Bank into the turn: roll follows the curvature of the depth weave.
-   const turn=-Math.sin(t.current*Math.PI*2+.6);
-   roll.current=THREE.MathUtils.lerp(roll.current,turn*.38,ease);
+   // Straight glide: no banking, wings stay level across the crossing.
+   roll.current=THREE.MathUtils.lerp(roll.current,0,ease);
    scale.current=THREE.MathUtils.lerp(scale.current,1,ease);
    cycle.current+=dt;
   }else if(phase.current==='shrink'){
@@ -124,7 +121,7 @@ function Flight({playing,reset,dock,children}:{playing:boolean;reset:number;dock
    dir.copy(goal).sub(g.position).divideScalar(dist||1);
    SWAY.copy(dir).cross(UP).normalize();
    dir.addScaledVector(SWAY,Math.sin(pt.current*2.2)*.35*Math.min(dist/14,1)).normalize();
-   const speed=THREE.MathUtils.clamp(dist*1.5,.8,9);
+   const speed=THREE.MathUtils.clamp(dist*2,1.2,12);
    g.position.addScaledVector(dir,speed*dt);
    scale.current=THREE.MathUtils.lerp(scale.current,.13,1-Math.exp(-2.5*dt));
    roll.current=THREE.MathUtils.lerp(roll.current,Math.sin(pt.current*2.2)*-.3,ease);
